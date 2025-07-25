@@ -38,6 +38,10 @@ import json
 import tempfile
 import logging
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 # Configuración
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
