@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧾 Procesador de Facturas con IA</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .upload-area {
+            border: 3px dashed rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .upload-area:hover {
+            border-color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        .upload-area.dragover {
+            border-color: #4CAF50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        .btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            text-align: center;
+            font-size: 18px;
+        }
+        .error {
+            background: rgba(244, 67, 54, 0.2);
+            color: #ffcdd2;
+        }
+        .success {
+            background: rgba(76, 175, 80, 0.2);
+            color: #c8e6c9;
+        }
+        .info {
+            background: rgba(33, 150, 243, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧾 Procesador de Facturas con IA</h1>
+        
+        <div class="info">
+            <h3>📋 ¿Cómo funciona?</h3>
+            <p>1. Selecciona o arrastra un archivo PDF de factura</p>
+            <p>2. El sistema extrae automáticamente el texto</p>
+            <p>3. GPT-4o analiza y estructura la información</p>
+            <p>4. Obtienes un JSON con todos los datos extraídos</p>
+        </div>
+
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <h3>📁 Seleccionar Factura PDF</h3>
+            <p>Haz clic aquí o arrastra tu archivo PDF</p>
+            <input type="file" id="fileInput" accept=".pdf" onchange="handleFile(this.files[0])">
+        </div>
+
+        <div style="text-align: center;">
+            <button class="btn" id="processBtn" onclick="processInvoice()" disabled>
+                🚀 Procesar Factura
+            </button>
+            <button class="btn" onclick="clearResults()">
+                🗑️ Limpiar
+            </button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // Manejar drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (file && file.type === 'application/pdf') {
+                selectedFile = file;
+                document.getElementById('processBtn').disabled = false;
+                showResult(`📄 Archivo seleccionado: ${file.name} (${(file.size/1024).toFixed(1)} KB)`, 'info');
+            } else {
+                showResult('❌ Por favor selecciona un archivo PDF válido', 'error');
+            }
+        }
+
+        async function processInvoice() {
+            if (!selectedFile) {
+                showResult('❌ Por favor selecciona un archivo primero', 'error');
+                return;
+            }
+
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.textContent = '⏳ Procesando...';
+
+            showResult('🔄 Procesando factura con IA...\nEsto puede tomar unos segundos...', 'loading');
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    const formatted = JSON.stringify(result, null, 2);
+                    showResult(`✅ ¡Factura procesada exitosamente!\n\n${formatted}`, 'success');
+                } else {
+                    showResult(`❌ Error del servidor: ${result.detail || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error de conexión: ${error.message}`, 'error');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = '🚀 Procesar Factura';
+            }
+        }
+
+        function showResult(text, type = '') {
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = text;
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+        }
+
+        function clearResults() {
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('processBtn').disabled = true;
+            selectedFile = null;
+        }
+    </script>
+</body>
+</html>

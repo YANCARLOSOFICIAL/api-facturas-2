@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧾 Procesador de Facturas con IA</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px;
+        }
+        
+        .upload-area {
+            border: 3px dashed #4facfe;
+            border-radius: 15px;
+            padding: 60px 20px;
+            text-align: center;
+            background: #f8fbff;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: #00f2fe;
+            background: #f0f9ff;
+            transform: translateY(-2px);
+        }
+        
+        .upload-area.dragover {
+            border-color: #00f2fe;
+            background: #e6f7ff;
+            transform: scale(1.02);
+        }
+        
+        .upload-icon {
+            font-size: 4em;
+            color: #4facfe;
+            margin-bottom: 20px;
+        }
+        
+        .upload-text {
+            font-size: 1.3em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .upload-hint {
+            color: #999;
+            font-size: 1em;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 20px 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #4facfe;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result {
+            display: none;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 5px solid #28a745;
+        }
+        
+        .result h3 {
+            color: #28a745;
+            margin-bottom: 15px;
+        }
+        
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .error {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8d7da;
+            color: #721c24;
+            border-radius: 8px;
+            border-left: 5px solid #dc3545;
+        }
+        
+        .file-info {
+            display: none;
+            margin: 20px 0;
+            padding: 15px;
+            background: #e7f3ff;
+            border-radius: 8px;
+            border-left: 5px solid #2196f3;
+        }
+        
+        .progress-bar {
+            display: none;
+            width: 100%;
+            height: 6px;
+            background: #f3f3f3;
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe, #00f2fe);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧾 Procesador de Facturas</h1>
+            <p>Sube tu factura PDF y obtén los datos estructurados con IA</p>
+        </div>
+        
+        <div class="content">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Arrastra tu factura PDF aquí</div>
+                <div class="upload-hint">o haz clic para seleccionar</div>
+                <input type="file" id="fileInput" accept=".pdf">
+            </div>
+            
+            <div class="file-info" id="fileInfo">
+                <strong>Archivo seleccionado:</strong> <span id="fileName"></span><br>
+                <strong>Tamaño:</strong> <span id="fileSize"></span>
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="btn" id="processBtn" onclick="processFile()" disabled>
+                    🚀 Procesar Factura
+                </button>
+                <button class="btn" onclick="reset()">
+                    🔄 Limpiar
+                </button>
+            </div>
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>🤖 Procesando con IA... Por favor espera</p>
+            </div>
+            
+            <div class="error" id="error">
+                <strong>❌ Error:</strong> <span id="errorMessage"></span>
+            </div>
+            
+            <div class="result" id="result">
+                <h3>✅ Datos Extraídos</h3>
+                <div class="json-viewer" id="jsonResult"></div>
+                <br>
+                <button class="btn" onclick="downloadJson()">💾 Descargar JSON</button>
+                <button class="btn" onclick="copyJson()">📋 Copiar JSON</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let extractedData = null;
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const processBtn = document.getElementById('processBtn');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const error = document.getElementById('error');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+
+        // Eventos de drag and drop
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', handleDragOver);
+        uploadArea.addEventListener('dragleave', handleDragLeave);
+        uploadArea.addEventListener('drop', handleDrop);
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        }
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+                showError('Por favor selecciona un archivo PDF válido.');
+                return;
+            }
+
+            selectedFile = file;
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            fileInfo.style.display = 'block';
+            processBtn.disabled = false;
+            hideError();
+            hideResult();
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function processFile() {
+            if (!selectedFile) {
+                showError('Por favor selecciona un archivo PDF.');
+                return;
+            }
+
+            showLoading();
+            hideError();
+            hideResult();
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Error procesando la factura');
+                }
+
+                const data = await response.json();
+                extractedData = data;
+                showResult(data);
+            } catch (err) {
+                console.error('Error:', err);
+                showError(err.message || 'Error procesando la factura');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        function showLoading() {
+            loading.style.display = 'block';
+            processBtn.disabled = true;
+            progressBar.style.display = 'block';
+            
+            // Simular progreso
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 200);
+            
+            setTimeout(() => {
+                clearInterval(interval);
+                progressFill.style.width = '100%';
+            }, 3000);
+        }
+
+        function hideLoading() {
+            loading.style.display = 'none';
+            processBtn.disabled = false;
+            progressBar.style.display = 'none';
+            progressFill.style.width = '0%';
+        }
+
+        function showResult(data) {
+            result.style.display = 'block';
+            document.getElementById('jsonResult').textContent = JSON.stringify(data, null, 2);
+            result.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function hideResult() {
+            result.style.display = 'none';
+        }
+
+        function showError(message) {
+            error.style.display = 'block';
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function hideError() {
+            error.style.display = 'none';
+        }
+
+        function reset() {
+            selectedFile = null;
+            extractedData = null;
+            fileInfo.style.display = 'none';
+            processBtn.disabled = true;
+            fileInput.value = '';
+            hideResult();
+            hideError();
+            hideLoading();
+        }
+
+        function downloadJson() {
+            if (!extractedData) return;
+            
+            const blob = new Blob([JSON.stringify(extractedData, null, 2)], {
+                type: 'application/json'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `factura_${extractedData.invoice_id || 'resultado'}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function copyJson() {
+            if (!extractedData) return;
+            
+            const text = JSON.stringify(extractedData, null, 2);
+            navigator.clipboard.writeText(text).then(() => {
+                // Mostrar feedback temporal
+                const btn = event.target;
+                const originalText = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                setTimeout(() => {
+                    btn.textContent = originalText;
+                }, 2000);
+            }).catch(err => {
+                console.error('Error copiando:', err);
+                showError('No se pudo copiar al portapapeles');
+            });
+        }
+    </script>
+</body>
+</html>

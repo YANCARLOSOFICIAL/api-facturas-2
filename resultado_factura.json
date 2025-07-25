@@ -1,0 +1,8 @@
+{
+  "invoice_id": "07812587-a12c-49bf-bde4-3126a654c62e",
+  "filename": "1-20250724150851.pdf",
+  "file_size": 68561,
+  "text_extracted": 2721,
+  "ai_response": "Aquí tienes la información extraída de la factura en formato JSON:\n\n```json\n{\n  \"tipo_documento\": \"FACTURA ELECTRONICA DE Responsable de IVA\",\n  \"numero\": \"991000158\",\n  \"fecha\": \"2025-07-23\",\n  \"proveedor\": {\n    \"nombre\": \"Kamila Innovation SAS\",\n    \"NIT\": \"900972990-1\",\n    \"direccion\": \"CR 16 16-79 - Sibundoy - Putumayo - Colombia\",\n    \"telefono\": \"3168308196\",\n    \"email\": \"yan@gmail.com\"\n  }\n}\n```\n\nSi necesitas más información o algún otro formato, házmelo saber.",
+  "status": "✅ Procesado exitosamente"
+}
